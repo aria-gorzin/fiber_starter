@@ -1,0 +1,408 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "App API",
+    "version": "1.2",
+    "contact": {
+      "name": "Aria",
+      "email": "gorzin.aria@gmail.com"
+    }
+  },
+  "tags": [
+    {
+      "name": "Machines"
+    },
+    {
+      "name": "Users"
+    }
+  ],
+  "schemes": [
+    "http"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "paths": {
+    "/v1/machine": {
+      "post": {
+        "summary": "Create machine",
+        "description": "Use this API to create a machine",
+        "operationId": "Machines_CreateMachine",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbMachineResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/pbCreateMachineRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Machines"
+        ]
+      }
+    },
+    "/v1/users": {
+      "post": {
+        "summary": "Create new user",
+        "description": "Use this API to create a new user in my new user service ",
+        "operationId": "Users_CreateUser",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbCreateUserResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/pbCreateUserRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      },
+      "put": {
+        "summary": "Update users",
+        "description": "Use this API to update user",
+        "operationId": "Users_UpdateUser",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbUpdateUserResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/pbUpdateUserRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Users"
+        ],
+        "security": [
+          {
+            "bearer": []
+          }
+        ]
+      }
+    },
+    "/v1/users/login": {
+      "post": {
+        "summary": "Login user",
+        "description": "Use this API to login user and get access token \u0026 refresh token",
+        "operationId": "Users_LoginUser",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbLoginUserResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "body",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/pbLoginUserRequest"
+            }
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/v1/users/verify-email": {
+      "get": {
+        "summary": "Verify email",
+        "description": "Use this API to verify user's email address",
+        "operationId": "Users_VerifyEmail",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": {
+              "$ref": "#/definitions/pbVerifyEmailResponse"
+            }
+          },
+          "default": {
+            "description": "An unexpected error response.",
+            "schema": {
+              "$ref": "#/definitions/rpcStatus"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "emailId",
+            "in": "query",
+            "required": false,
+            "type": "string",
+            "format": "int64"
+          },
+          {
+            "name": "secretCode",
+            "in": "query",
+            "required": false,
+            "type": "string"
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      }
+    }
+  },
+  "definitions": {
+    "pbCreateMachineRequest": {
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string"
+        }
+      }
+    },
+    "pbCreateUserRequest": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "fullName": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      }
+    },
+    "pbCreateUserResponse": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "$ref": "#/definitions/pbUser"
+        }
+      }
+    },
+    "pbLoginUserRequest": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        }
+      }
+    },
+    "pbLoginUserResponse": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "$ref": "#/definitions/pbUser"
+        },
+        "sessionId": {
+          "type": "string"
+        },
+        "accessToken": {
+          "type": "string"
+        },
+        "refreshToken": {
+          "type": "string"
+        },
+        "accessTokenExpiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "refreshTokenExpiresAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "pbMachine": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "passwordChangedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "pbMachineResponse": {
+      "type": "object",
+      "properties": {
+        "machine": {
+          "$ref": "#/definitions/pbMachine"
+        }
+      }
+    },
+    "pbUpdateUserRequest": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string",
+          "example": "johndoe",
+          "description": "Unique username of the user to update"
+        },
+        "fullName": {
+          "type": "string",
+          "example": "Johnathan Doe",
+          "description": "Full name of the user"
+        },
+        "email": {
+          "type": "string",
+          "example": "john.doe@example.com",
+          "description": "Email address of the user"
+        },
+        "password": {
+          "type": "string",
+          "example": "NewPassw0rd!",
+          "description": "New password for the account"
+        }
+      }
+    },
+    "pbUpdateUserResponse": {
+      "type": "object",
+      "properties": {
+        "user": {
+          "$ref": "#/definitions/pbUser"
+        }
+      }
+    },
+    "pbUser": {
+      "type": "object",
+      "properties": {
+        "username": {
+          "type": "string"
+        },
+        "fullName": {
+          "type": "string"
+        },
+        "email": {
+          "type": "string"
+        },
+        "passwordChangedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "pbVerifyEmailResponse": {
+      "type": "object",
+      "properties": {
+        "isVerified": {
+          "type": "boolean"
+        }
+      }
+    },
+    "protobufAny": {
+      "type": "object",
+      "properties": {
+        "@type": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": {}
+    },
+    "rpcStatus": {
+      "type": "object",
+      "properties": {
+        "code": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "message": {
+          "type": "string"
+        },
+        "details": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "$ref": "#/definitions/protobufAny"
+          }
+        }
+      }
+    }
+  },
+  "securityDefinitions": {
+    "bearer": {
+      "type": "apiKey",
+      "description": "Use: Bearer \u003caccess_token\u003e",
+      "name": "Authorization",
+      "in": "header"
+    }
+  }
+}

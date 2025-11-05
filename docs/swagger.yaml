@@ -1,0 +1,280 @@
+basePath: /
+definitions:
+  address.addressResponse:
+    properties:
+      city:
+        type: string
+      client_id:
+        type: integer
+      created_at:
+        type: string
+      id:
+        type: integer
+      lat:
+        type: number
+      long:
+        type: number
+      phone:
+        type: string
+      street:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+      zip:
+        type: string
+    type: object
+  address.createAddressRequest:
+    properties:
+      city:
+        type: string
+      client_id:
+        type: integer
+      lat:
+        type: number
+      long:
+        type: number
+      phone:
+        type: string
+      street:
+        type: string
+      title:
+        maxLength: 255
+        minLength: 2
+        type: string
+      zip:
+        type: string
+    required:
+    - city
+    - client_id
+    - title
+    type: object
+  address.updateAddressRequest:
+    properties:
+      city:
+        type: string
+      lat:
+        type: number
+      long:
+        type: number
+      phone:
+        type: string
+      street:
+        type: string
+      title:
+        maxLength: 255
+        minLength: 2
+        type: string
+      zip:
+        type: string
+    required:
+    - city
+    - title
+    type: object
+  util.CustomError:
+    properties:
+      error_code:
+        type: string
+      message:
+        type: string
+    type: object
+  util.ValidateError:
+    properties:
+      error_code:
+        type: string
+      field:
+        type: string
+      message:
+        type: string
+      tag:
+        type: string
+      value: {}
+    type: object
+host: localhost:7070
+info:
+  contact:
+    email: aria@example.com
+    name: Aria Gorzin
+    url: http://example.com
+  description: Product Information Management API
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://example.com/terms/
+  title: APP API
+  version: "2.0"
+paths:
+  /addresses:
+    get:
+      consumes:
+      - application/json
+      description: List addresses by client ID
+      parameters:
+      - description: Client ID
+        in: query
+        name: client_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/address.addressResponse'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.CustomError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.CustomError'
+      security:
+      - BearerAuth: []
+      summary: List addresses by client ID
+      tags:
+      - addresses
+    post:
+      consumes:
+      - application/json
+      description: Create a new address
+      parameters:
+      - description: Address Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/address.createAddressRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/address.addressResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.CustomError'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            items:
+              $ref: '#/definitions/util.ValidateError'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Create a new address
+      tags:
+      - addresses
+  /addresses/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an address by ID
+      parameters:
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.CustomError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.CustomError'
+      security:
+      - BearerAuth: []
+      summary: Delete an address by ID
+      tags:
+      - addresses
+    get:
+      consumes:
+      - application/json
+      description: Get an address by ID
+      parameters:
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/address.addressResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.CustomError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.CustomError'
+      security:
+      - BearerAuth: []
+      summary: Get an address by ID
+      tags:
+      - addresses
+    put:
+      consumes:
+      - application/json
+      description: Update an address by ID
+      parameters:
+      - description: Address ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Address Info
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/address.updateAddressRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/address.addressResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/util.CustomError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/util.CustomError'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            items:
+              $ref: '#/definitions/util.ValidateError'
+            type: array
+      security:
+      - BearerAuth: []
+      summary: Update an address by ID
+      tags:
+      - addresses
+securityDefinitions:
+  BearerAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

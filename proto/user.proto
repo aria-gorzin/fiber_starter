@@ -1,0 +1,132 @@
+syntax = "proto3";
+
+package pb;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option go_package = "github.com/aria/app/pb";
+
+message User {
+    string username = 1;
+    string full_name = 2;
+    string email = 3;
+    google.protobuf.Timestamp password_changed_at = 4;
+    google.protobuf.Timestamp created_at = 5;
+}
+
+message UpdateUserRequest {
+    string username = 1 [
+        (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+            description: "Unique username of the user to update"
+            example: "\"johndoe\""
+        }
+    ];
+    optional string full_name = 2 [
+        (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+            description: "Full name of the user"
+            example: "\"Johnathan Doe\""
+        }
+    ];
+    optional string email = 3 [
+        (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+            description: "Email address of the user"
+            example: "\"john.doe@example.com\""
+        }
+    ];
+    optional string password = 4 [
+        (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+            description: "New password for the account"
+            example: "\"NewPassw0rd!\""
+        }
+    ];
+}
+
+message CreateUserRequest {
+    string username = 1;
+    string full_name = 2;
+    string email = 3;
+    string password = 4;
+}
+
+message CreateUserResponse {
+    User user = 1;
+}
+
+message LoginUserRequest {
+    string username = 1;
+    string password = 2;
+}
+
+message LoginUserResponse {
+    User user = 1;
+    string session_id = 2;
+    string access_token = 3;
+    string refresh_token = 4;
+    google.protobuf.Timestamp access_token_expires_at = 5;
+    google.protobuf.Timestamp refresh_token_expires_at = 6;
+}
+
+
+message UpdateUserResponse {
+    User user = 1;
+}
+
+message VerifyEmailRequest {
+    int64 email_id = 1;
+    string secret_code = 2;
+}
+
+message VerifyEmailResponse {
+    bool is_verified = 1;
+}
+
+service Users {
+    rpc CreateUser (CreateUserRequest) returns (CreateUserResponse) {
+        option (google.api.http) = {
+            post: "/v1/users"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+            description: "Use this API to create a new user in my new user service ";
+            summary: "Create new user";
+        };
+    }
+    rpc UpdateUser (UpdateUserRequest) returns (UpdateUserResponse) {
+        option (google.api.http) = {
+            put: "/v1/users"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+            description: "Use this API to update user";
+            summary: "Update users";
+            // tags: "User Management";
+            security: {
+                security_requirement: {
+                    key: "bearer";
+                    value: {};
+                }
+            };
+        };
+    }
+    rpc LoginUser (LoginUserRequest) returns (LoginUserResponse) {
+        option (google.api.http) = {
+            post: "/v1/users/login"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+            description: "Use this API to login user and get access token & refresh token";
+            summary: "Login user";
+        };
+    }
+    rpc VerifyEmail (VerifyEmailRequest) returns (VerifyEmailResponse) {
+        option (google.api.http) = {
+            get: "/v1/users/verify-email"
+        };
+        option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+            description: "Use this API to verify user's email address";
+            summary: "Verify email";
+        };
+    }
+}

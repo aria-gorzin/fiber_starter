@@ -1,0 +1,26 @@
+root = "."
+testdata_dir = "testdata"
+tmp_dir = "tmp"
+
+[build]
+  bin = "./tmp/main"
+  pre_cmd = ["bash scripts/prebuild.sh"]
+  cmd = "go build -o ./tmp/main ."
+  delay = 1000
+
+  # Keep Air from watching generated stuff
+  exclude_dir = ["assets","tmp","vendor","testdata","db/sqlc","pb","doc","docs"]
+  exclude_file = []
+  exclude_regex = [
+    "_test.go",
+    ".*\\.pb\\.go$",       # protobufs
+    ".*_grpc\\.pb\\.go$",  # gRPC stubs
+    ".*\\.pb\\.gw\\.go$",  # grpc-gateway
+  ]
+
+  include_dir = []         # or explicitly include only your hand-written code dirs
+  include_ext = ["go", "tpl", "tmpl", "html", "sql", "proto"]
+
+  log = "build-errors.log"
+  stop_on_error = false
+  kill_delay = "0s"

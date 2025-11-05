@@ -1,0 +1,761 @@
+Project app {
+  database_type: 'PostgreSQL'
+  Note: '''''
+    # App Database
+  '''''
+}
+
+/* ---------- CORE TABLES ---------- */
+
+Table "bottle" {
+  "id" bigserial [pk, not null]
+  "gas_type" "varying(50)"
+  "title" "varying(256)" [not null]
+  "short_title" "varying(50)"
+  "detection_title" "varying(256)" [not null]
+  "illegal_above_row" integer
+  "image" "varying(256)"
+  "client_id" bigint [not null, ref: > "client"."id"]
+  "capacity" doubleprecision [not null]
+  "display_capacity" "varying(256)"
+  "remote_id" "varying(256)"
+  "remote_gas_id" "varying(256)"
+  "remote_title" "varying(256)"
+  "remote_gas_title" "varying(256)"
+  "contract_required" boolean
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    (client_id, detection_title) [unique, name: "bottle_client_id_detection_title_key"]
+    (client_id, title) [unique, name: "bottle_client_id_title_key"]
+    id [type: btree, unique, name: "ix_bottle_id"]
+    short_title [type: btree, name: "ix_bottle_short_title"]
+    title [type: btree, name: "ix_bottle_title"]
+  }
+}
+
+Table "chamber" {
+  "id" bigserial [pk, not null]
+  "position" "varying(50)" [not null]
+  "machine_id" bigint [not null, ref: > "machine"."id"]
+  "bottle_id" bigint [ref: > "bottle"."id"]
+  "bottle_status" "varying(50)"
+  "is_active" boolean [not null]
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    (machine_id) [unique, name: "chamber_machine_id_key"]
+    id [type: btree, unique, name: "ix_chamber_id"]
+  }
+}
+
+Table "chamber_history" {
+  "id" bigserial [pk, not null]
+  "chamber_id" bigint [not null, ref: > "chamber"."id"]
+  "load_id" bigint [ref: > "load"."id"]
+  "transaction_id" bigint [ref: > "transaction"."id"]
+  "user_id" bigint [ref: > "user"."id"]
+  "bottle_id" bigint [ref: > "bottle"."id"]
+  "bottle_status" "varying(50)"
+  "created_at" timestamp [not null]
+  "event" "varying(255)"
+
+  Indexes {
+    id [type: btree, unique, name: "ix_chamber_history_id"]
+  }
+}
+
+Table "client" {
+  "id" bigserial [pk, not null]
+  "parent_id" bigint [ref: > "client"."id"]
+  "title" "varying(256)" [not null]
+  "fleet_id" "varying" [unique, not null]
+  "is_active" boolean [not null]
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_client_id"]
+    title [type: btree, unique, name: "ix_client_title"]
+  }
+}
+
+Table "api_key" {
+  "id" bigserial [pk, not null]
+  "api_key" "varying(50)"
+  "client_id" bigint [ref: > "client"."id"]
+  "user_group_id" bigint [ref: > "user_group"."id"]
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+}
+
+Table "command" {
+  "id" bigserial [pk, not null]
+  "machine_id" bigint [not null, ref: > "machine"."id"]
+  "transaction_id" bigint [ref: > "transaction"."id"]
+  "user_id" bigint [ref: > "user"."id"]
+  "command" "varying(100)" [not null]
+  "data" json
+  "response" text
+  "sent" boolean [not null]
+  "timeout" integer [not null]
+  "fail_if_not_ready" boolean [not null]
+  "wait_for_response" boolean [not null]
+  "wait_for_connection" integer [not null]
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_command_id"]
+  }
+}
+
+Table "counter" {
+  "id" integer [pk, not null]
+  "type" "varying" [not null]
+  "count" integer [not null]
+
+  Indexes {
+    type [type: btree, unique, name: "ix_counter_type"]
+  }
+}
+
+Table "credit" {
+  "id" bigserial [pk, not null]
+  "original_transaction_id" bigint [ref: > "transaction"."id"]
+  "transaction_id" bigint [ref: > "transaction"."id"]
+  "client_id" bigint [not null, ref: > "client"."id"]
+  "is_valid" boolean [not null]
+  "amount" numeric [not null]
+  "user_id" bigint [ref: > "user"."id"]
+  "code" "varying(50)" [not null]
+  "expiry_date" timestamp
+  "note" "varying(256)"
+  "machine_id" bigint [ref: > "machine"."id"]
+  "bottle_id" bigint [ref: > "bottle"."id"]
+  "creator_id" bigint [ref: > "user"."id"]
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_credit_id"]
+  }
+}
+
+Table "currency_rate" {
+  "currency" "varying(10)" [pk, not null]
+  "rate" numeric
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+}
+
+Table "detection_attempt" {
+  "transaction_id" bigint [not null, ref: > "transaction"."id"]
+  "bottle_id" bigint [ref: > "bottle"."id"]
+  "image" "varying(256)"
+  "version" "varying(256)"
+  "detected_identifier" "varying(256)"
+  "confidence" numeric [not null]
+  "id" bigserial [pk, not null]
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_detection_attempt_id"]
+  }
+}
+
+Table "fill_order" {
+  "id" bigserial [pk, not null]
+  "created_by_id" bigint [not null, ref: > "user"."id"]
+  "assigned_to_id" bigint [not null, ref: > "user"."id"]
+  "status" "varying" [not null]
+  "notes" "varying"
+  "travel_document" "varying"
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_fill_order_id"]
+  }
+}
+
+Table "fill_order_bottle" {
+  "id" bigserial [pk, not null]
+  "fill_order_id" bigint [not null, ref: > "fill_order"."id"]
+  "bottle_id" bigint [not null, ref: > "bottle"."id"]
+  "machine_id" bigint [not null, ref: > "machine"."id"]
+  "count" integer [not null]
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_fill_order_bottle_id"]
+  }
+}
+
+Table "fix_order" {
+  "id" bigserial [pk, not null]
+  "created_by_id" bigint [not null, ref: > "user"."id"]
+  "assigned_to_id" bigint [ref: > "user"."id"]
+  "machine_id" bigint [not null, ref: > "machine"."id"]
+  "status" "varying" [not null]
+  "notes" text
+  "issue" "varying" [not null]
+  "action" text
+  "documents" "varying(255)"
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_fix_order_id"]
+  }
+}
+
+Table "load" {
+  "id" bigserial [pk, not null]
+  "machine_id" bigint [not null, ref: > "machine"."id"]
+  "client_id" bigint [not null, ref: > "client"."id"]
+  "user_id" bigint [ref: > "user"."id"]
+  "is_finished" boolean [not null]
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_load_id"]
+  }
+}
+
+Table "machine" {
+  "id" bigserial [pk, not null]
+  "client_id" bigint [not null, ref: > "client"."id"]
+  "api_key" "varying(256)" [unique, not null]
+  "title" "varying(100)" [not null]
+  "vr_title" "varying(100)" [unique]
+  "url" "varying(256)" [unique]
+  "group_id" bigint [ref: > "machine_group"."id"]
+  "is_active" boolean [not null]
+  "management_id" "varying(50)" [unique]
+  "layout_id" "varying(50)"
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  "remote_id" "varying(256)"
+  "remote_terminal_id"
+  "terminal_id"
+  "address" text
+  "region" "varying(256)"
+  "lat"
+  "lon"
+  "secret" "varying(256)"
+
+  Indexes {
+    (client_id, title) [unique, name: "machine_client_id_title_key"]
+    id [type: btree, unique, name: "ix_machine_id"]
+  }
+}
+
+
+
+Table "machine_bottle" {
+  "bottle_id" bigint [not null, ref: > "bottle"."id"]
+  "machine_group_id" bigint [not null, ref: > "machine_group"."id"]
+  "min" integer [not null]
+  "target" integer
+  "order" integer [not null]
+  "id" bigserial [pk, not null]
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+  "missing_cap_penalty" numeric [not null, default: 0]
+  "missing_valve_penalty" numeric [not null, default: 0]
+  "missing_label_penalty" numeric [not null, default: 0]
+  "damaged_bottle_penalty" numeric [not null, default: 0]
+
+  Indexes {
+    (bottle_id, machine_group_id) [unique, name: "machine_bottle_bottle_id_machine_group_id_key"]
+    id [type: btree, unique, name: "ix_machine_bottle_id"]
+  }
+}
+
+Table "machine_group" {
+  "id" bigserial [pk, not null]
+  "title" "varying(256)" [not null]
+  "client_id" bigint [not null, ref: > "client"."id"]
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    (client_id, title) [unique, name: "machine_group_client_id_title_key"]
+    id [type: btree, unique, name: "ix_machine_group_id"]
+  }
+}
+
+Table "machine_group_history" {
+  "id" bigserial [pk, not null]
+  "machine_id" bigint [not null, ref: > "machine"."id"]
+  "group_id" bigint [ref: > "machine_group"."id"]
+  "created_at" timestamp [not null]
+  "user_id" bigint [not null, ref: > "user"."id"]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_machine_group_history_id"]
+  }
+}
+
+Table "machine_status" {
+  "id" bigserial [pk, not null]
+  "machine_id" bigint [not null, ref: > "machine"."id"]
+  "maintainer_id" bigint [ref: > "user"."id"]
+  "status" "varying(256)" [not null]
+  "door_status" json
+  "gas_sensor_status" json
+  "fan_status" json
+  "printer_status" json
+  "payment_terminal_status" json
+  "carousel_status" json
+  "camera_status" json
+  "error" text
+  "last_status_change" timestamp [not null]
+  "transaction_id" "varying(50)"
+  "load_id" "varying(50)"
+  "locked" boolean [not null]
+  "reboot_lock" boolean
+  "last_event" text
+  "component" "varying(50)"
+  "has_critical_error" boolean
+
+  Indexes {
+    id [type: btree, unique, name: "ix_machine_status_id"]
+    machine_id [type: btree, unique, name: "ix_machine_status_machine_id"]
+  }
+}
+
+Table "machine_user" {
+  "user_group_id" bigint [not null, ref: > "user_group"."id"]
+  "machine_group_id" bigint [ref: > "machine_group"."id"]
+  "machine_id" bigint [ref: > "machine"."id"]
+  "id" bigserial [pk, not null]
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    (user_group_id, machine_group_id) [unique, name: "machine_user_user_group_id_machine_group_id_key"]
+    id [type: btree, unique, name: "ix_machine_user_id"]
+  }
+}
+
+
+Table "notification" {
+  "title" "varying(256)" [not null]
+  "level" "varying(50)"
+  "content" text [not null]
+  "extra_data" json [not null]
+  "read" boolean [not null]
+  "seen" boolean [not null]
+  "client_id" bigint [not null, ref: > "client"."id"]
+  "id" bigserial [pk, not null]
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+  "machine_id" bigint [ref: > "machine"."id"]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_notification_id"]
+  }
+}
+
+Table "notification_template" {
+  "id" bigserial [pk, not null]
+  "level" "varying(50)" [not null]
+  "title" "varying(256)" [not null]
+  "description" text [not null]
+  "content" text [not null]
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_notification_template_id"]
+  }
+}
+
+Table "notification_type" {
+  "id" bigserial [pk, not null]
+  "type" varchar(255)
+}
+
+Table "user_notifications" {
+  "id" bigserial [pk, not null]
+  "notificaiton_type_id" bigint [not null, ref: > "notificaiton_type"."id"]
+  "user_id" bigint [not null, ref: > "user"."id"
+  "email" boolean
+  "sms" boolean
+}
+
+Table "notification_usage" {
+  "client_id" bigint [not null, ref: > "client"."id"]
+  "channel" "varying(50)" [not null]
+  "reason" "varying(50)" [not null]
+  "transaction_id" "varying(50)"
+  "user_id" bigint [ref: > "user"."id"]
+  "machine_id" bigint [ref: > "machine"."id"]
+  "id" bigserial [pk, not null]
+  "created_at" timestamp [not null]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_notification_usage_id"]
+  }
+}
+
+Table "payment" {
+  "id" bigserial [pk, not null]
+  "transaction_id" bigint [not null, ref: > "transaction"."id"]
+  "payment_method_id" bigint [ref: > "payment_method"."id"]
+  "reference_token" "varying(100)" [not null]
+  "amount" numeric [not null]
+  "status" "varying(50)" [not null]
+  "error" text
+  "receipt" text
+  "receipt_number" "varying(100)"
+  "extra_data" json
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_payment_id"]
+  }
+}
+
+Table "refund" {
+  "id" bigserial [pk, not null]
+  "payment_id" bigint [not null, ref: > "payment"."id"]
+  "amount" numeric [not null]
+  "status" "varying(50)" [not null]
+  "error" text
+  "receipt" text
+  "refunded_by_id" bigint [ref: > "user"."id"]
+  "extra_data" json
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_payment_id"]
+  }
+}
+
+Table "payment_method" {
+  "id" bigserial [pk, not null]
+  "machine_id" bigint [not null, ref: > "machine"."id"]
+  "is_active" boolean [not null]
+  "config_id" bigint [ref: > "payment_method_config"."id"]
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_payment_method_id"]
+  }
+}
+
+Table "payment_method_config" {
+  "id" bigserial [pk, not null]
+  "title" "varying(100)" [not null]
+  "method" "varying(50)" [not null]
+  "client_id" bigint [not null, ref: > "client"."id"]
+  "is_cancelable" boolean
+  "is_auto_refundable" boolean
+  "refund_type" "varying"
+  "refund_limit_type" "varying"
+  "refund_limit_value" integer
+  "is_active" boolean [not null]
+  "extra_data" text
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    (client_id, title) [unique, name: "payment_method_config_client_id_title_key"]
+    id [type: btree, unique, name: "ix_payment_method_config_id"]
+  }
+}
+
+Table "permission" {
+  "id" bigserial [pk, not null]
+  "title" "varying(256)" [unique, not null]
+  "description" text
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_permission_id"]
+  }
+}
+
+Table "user_permission" {
+  "id" bigserial [pk, not null]
+  "permission_id" bigint [not null, ref: > "permission"."id"]
+  "user_group_id" bigint [not null, ref: > "user_group"."id"]
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    (permission_id, user_group_id) [unique, name: "user_permission_permission_id_user_group_id_key"]
+    id [type: btree, unique, name: "ix_user_permission_id"]
+  }
+}
+
+Table schedule {
+  "id" bigserial [pk, not null]
+  "title" varchar(255)
+}
+
+Table schedule_item {
+  "id" bigserial [pk, not null]
+  "schedule_id" bigint [not null, ref: > "schedule"."id"]
+  "start_at" timestamp [not null]
+  "end_at" timestamp [not null]
+}
+
+Table "discount" {
+  "id" bigserial [pk, not null]
+  "price_id" bigint [ref: > "price"."id"]
+  "machine_group_id" bigint [ref: > "machine_group"."id"]
+  "amount" numeric [not null]
+  "reason" varchar(256),
+  "can_stack" boolean [not null]
+  "is_active" boolean [not null]
+  "schedule_id" bigint [not null, ref: > "schedule"."id"]
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    (price_id, schedule_id) [unique, name: "discount_price_id_schedule_id_key"]
+    id [type: btree, unique, name: "ix_discount_id"]
+  }
+}
+
+Table "price" {
+  "id" bigserial [pk, not null]
+  "in_bottle_id" bigint [ref: > "bottle"."id"]
+  "out_bottle_id" bigint [not null, ref: > "bottle"."id"]
+  "machine_group_id" bigint [not null, ref: > "machine_group"."id"]
+  "schedule_id" bigint [ref: > "schedule"."id"]
+  "price" numeric [not null]
+  "is_active" boolean [not null]
+  "is_deleted" boolean [not null]
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    (in_bottle_id, out_bottle_id, machine_group_id, schedule_id) [unique, name: "price_in_bottle_id_out_bottle_id_machine_group_id_schedule_id_key"]
+    id [type: btree, unique, name: "ix_price_id"]
+  }
+}
+
+Table "price_history" {
+  "id" bigserial [pk, not null]
+  "price_id" bigint [not null, ref: > "price"."id"]
+  "price" numeric [not null]
+  "is_active" boolean [not null]
+  "is_deleted" boolean [not null]
+  "user_id" bigint [ref: > "user"."id"]
+  "created_at" timestamp [not null]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_price_history_id"]
+  }
+}
+
+Table "reserve" {
+  "id" bigserial [pk, not null]
+  "user_id" bigint [ref: > "user"."id"]
+  "transaction_id" bigint [ref: > "transaction"."id"]
+  "bottle_id" bigint [not null, ref: > "bottle"."id"]
+  "machine_id" bigint [not null, ref: > "machine"."id"]
+  "expires_at" "varying"
+  "used_at" "varying"
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_reserve_id"]
+  }
+}
+
+Table "transaction" {
+  "id" bigserial [pk, not null]
+  "machine_id" bigint [not null, ref: > "machine"."id"]
+  "client_id" bigint [not null, ref: > "client"."id"]
+  "in_bottle_id" bigint [ref: > "bottle"."id"]
+  "out_bottle_id" bigint [ref: > "bottle"."id"]
+  "requested_price" numeric
+  "voucher_code" "varying(100)"
+  "abort_reason" text
+  "in_chamber_id" bigint [ref: > "chamber"."id"]
+  "out_chamber_id" bigint [ref: > "chamber"."id"]
+  "type" "varying(50)"
+  "paid" boolean
+  "delivered" boolean
+  "bottle_returned" boolean
+  "accepted_receiptless" boolean
+  "receipt_email_sent" boolean
+  "price_adjustments" json
+  "price_adjustment" numeric
+  "status" "varying(50)" [not null]
+  "feedback_score" integer
+  "step" "varying(50)" [not null]
+  "end_time" timestamp
+  "note" text
+  "user_id" bigint [ref: > "user"."id"]
+  "credit_code" "varying(50)"
+  "creator_id" bigint [ref: > "user"."id"]
+  "can_exchange" boolean [not null]
+  "in_bottle_validated" boolean [not null]
+  "retry_code" "varying(50)"
+  "is_mobile" boolean [not null, default: false]
+  "price_history_id" bigint [ref: > "price_history"."id"]
+  "attention_reasons" json
+  "needs_attention" boolean [not null, default: false]
+  "extra_data" json
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_transaction_id"]
+  }
+}
+
+Table "user" {
+  "id" bigserial [pk, not null]
+  "full_name" "varying(256)" [not null]
+  "email" "varying(256)" [not null]
+  "email_verified" boolean [not null]
+  "phone" "varying(256)"
+  "phone_verified" boolean [not null]
+  "password" "varying(256)" [not null]
+  "role" "varying(50)" [not null]
+  "two_factor_type" twofactorauthenticationtype
+  "totp_secret" "varying(256)"
+  "client_id" bigint [ref: > "client"."id"]
+  "group_id" bigint [ref: > "user_group"."id"]
+  "is_active" boolean [not null]
+  "default_pin" "varying(256)"
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    email [type: btree, unique, name: "ix_user_email"]
+    full_name [type: btree, name: "ix_user_full_name"]
+    id [type: btree, unique, name: "ix_user_id"]
+    phone [type: btree, unique, name: "ix_user_phone"]
+  }
+}
+
+Table "user_group" {
+  "id" bigserial [pk, not null]
+  "title" "varying(256)" [not null]
+  "client_id" bigint [not null, ref: > "client"."id"]
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    (client_id, title) [unique, name: "user_group_client_id_title_key"]
+    id [type: btree, unique, name: "ix_user_group_id"]
+  }
+}
+
+Table "wishlist" {
+  "id" bigserial [pk, not null]
+  "user_id" bigint [not null, ref: > "user"."id"]
+  "bottle_id" bigint [not null, ref: > "bottle"."id"]
+  "machine_id" bigint [not null, ref: > "machine"."id"]
+  "notification_type" notificationchannel
+  "created_at" timestamp [not null]
+  "updated_at" timestamp [not null]
+
+  Indexes {
+    id [type: btree, unique, name: "ix_wishlist_id"]
+  }
+}
+
+
+Table "machine_receipt_configs" {
+  "receipt_vat" doubleprecision
+  "receipt_bottles" boolean
+  "receipt_header" text
+  "receipt_footer" text
+  "detection_url" "varying(256)"
+}
+
+Table "machine_contact_config" {
+  "lock_message" text
+  "support_email" "varying(256)"
+  "support_phone_number" "varying(256)"
+}
+
+Table "machine_general_config" {
+  "timezone" "varying(32)" [not null]
+  "max_credit" numeric
+  "ignore_zero_payments" boolean
+  "delivery_door_count" integer
+  "detection_door_count" integer
+}
+
+Table "machine_carousel_config" {}
+
+Table "machine_door_config" {}
+
+Table "machine_gas_sensor_config" {}
+
+Table "machine_fan_config" {}
+
+Table "machine_ui_config" {}
+
+Table "machine_camera_config" {}
+
+Table "machine_pi_config" {}
+
+Table "machine_printer_config" {}
+
+Table "machine_payment_terminal_config" {}
+
+
+Table "machine_software" {
+  "id" bigserial [pk, not null]
+  "machine_id" bigint [not null, ref: > "machine"."id"]
+  "version" varchar(50)
+  "version_comment" varchar(255)
+  "created_at" timestamp [not null]
+}
+
+Table "part_version" {
+  "id" bigserial [pk, not null]
+  "part" varchar(50)
+  "version" varchar(50)
+}
+
+Table "part_field" {
+  "id" bigserial [pk, not null]
+  "part" varchar(50)
+  "key" varchar(255) [not null]
+  "type" varchar(255) [not null]
+  "allowed_values" text
+}
+
+Table "version_field" {
+  "part_version_id" bigint [not null, ref: > "part_version"."id"]
+  "part_field_id": bigint [not null, ref: > "part_field"."id"
+  "default_value" varchar(255)
+}
+
+Table "machine_part" {
+  "id" bigserial [pk, not null]
+  "machine_id" biginit [ref: > "machine"."id"]
+  "part_version_id" bigint [not null, ref: > "part_version"."id"]
+}
+
+Table "machine_part_field" {
+  "id" bigserial [pk, not null]
+  "machine_id" biginit [ref: > "machine"."id"]
+  "machine_field_id" bigint [not null, ref: > "machine_field"."id"]
+  "enabled" boolean
+  "value" varchar(255)
+}

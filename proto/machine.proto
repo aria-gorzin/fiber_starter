@@ -1,0 +1,54 @@
+syntax = "proto3";
+
+package pb;
+
+import "google/api/annotations.proto";
+import "google/protobuf/timestamp.proto";
+import "protoc-gen-openapiv2/options/annotations.proto";
+
+option go_package = "github.com/aria/app/pb";
+
+message Machine {
+    string username = 1;
+    string title = 2;
+    string email = 3;
+    google.protobuf.Timestamp password_changed_at = 4;
+    google.protobuf.Timestamp created_at = 5;
+}
+
+message UpdateMachineRequest {
+    optional string title = 2 [
+        (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_field) = {
+            description: "Title of the machine"
+            example: "\"Salam\""
+        }
+    ];
+}
+
+message CreateMachineRequest {
+    string title = 1;
+}
+
+message MachineResponse {
+    Machine machine = 1;
+}
+
+service Machines {
+    rpc CreateMachine (CreateMachineRequest) returns (MachineResponse) {
+        option (google.api.http) = {
+            post: "/v1/machine"
+            body: "*"
+        };
+        option (grpc.gateway.protoc_gen_openapiv2.options.openapiv2_operation) = {
+            description: "Use this API to create a machine";
+            summary: "Create machine";
+            // tags: "Machine Management";
+            // security: {
+            //     security_requirement: {
+            //         key: "bearer";
+            //         value: {};
+            //     }
+            // };
+        };
+    }
+}
